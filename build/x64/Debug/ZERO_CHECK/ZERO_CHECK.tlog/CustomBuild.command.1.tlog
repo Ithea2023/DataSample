@@ -1,0 +1,10 @@
+^C:\USERS\MING\SOURCE\REPOS\DATASAMPLE\BUILD\CMAKEFILES\1A31E4E554E8BBAF7C02D728779F0C0D\GENERATE.STAMP.RULE
+setlocal
+"C:\Program Files\CMake\bin\cmake.exe" -SC:/Users/ming/source/repos/DataSample -BC:/Users/ming/source/repos/DataSample/build --check-stamp-list CMakeFiles/generate.stamp.list --vs-solution-file C:/Users/ming/source/repos/DataSample/build/DataSample.sln
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal & call :cmErrorLevel %errorlevel% & goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd
