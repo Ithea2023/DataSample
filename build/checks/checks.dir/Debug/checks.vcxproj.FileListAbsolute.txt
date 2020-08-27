@@ -1,2 +1,0 @@
-C:\Users\ming\source\repos\DataSample\build\checks\Debug\checks.pdb
-C:\Users\ming\source\repos\DataSample\build\checks\checks.dir\Debug\checks.pdb

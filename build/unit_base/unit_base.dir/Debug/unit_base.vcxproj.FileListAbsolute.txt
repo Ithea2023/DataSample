@@ -1,2 +1,0 @@
-C:\Users\ming\source\repos\DataSample\build\unit_base\Debug\unit_base.pdb
-C:\Users\ming\source\repos\DataSample\build\unit_base\unit_base.dir\Debug\unit_base.pdb
