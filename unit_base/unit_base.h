@@ -4,6 +4,7 @@
 #include <stdint.h>
 #include <algorithm>
 #include <cmath>
+#include <checks.h>
 
 #include <type_traits>
 
@@ -27,7 +28,60 @@ namespace rtc_units_impl
     }
 
     constexpr bool IsPlusInfinity() const { return value_ == PlusInfinityVal(); }
+    //TODO need more code
 
+  protected:
+    // is int type
+    template<typename T, typename std::enable_if<std::is_integral<T>::value>::type* = nullptr>
+    static constexpr Unit_T FromValue(T value)
+    {
+      // if (Unit_T::one_sided)
+      //   RTC_DCHECK_GE(value, 0);
+      // RTC_DCHECK_GT(value, MinusInfinityVal());
+      return Unit_T(static_cast<int64_t>(value));
+    }
+    // is float type, prevent float overflow the int64 type.
+    template<typename T, typename std::enable_if<std::is_floating_point<T>::value>::type* = nullptr>
+    static constexpr Unit_T FromValue(T value)
+    {
+      if(value == std::numeric_limits<T>::infinity())
+      {
+        return PlusInfinity();
+      }else if(value == -std::numeric_limits<T>::infinity())
+      {
+        return MinusInfinity();
+      }else
+      {
+        return FromValue(static_cast<int64_t>(value));
+      }
+    }
+
+    // FromFraction
+    template<typename T, typename std::enable_if<std::is_integral<T>::value>::type* = nullptr>
+    static constexpr Unit_T FromFraction(int64_t denominator, T value)
+    {
+      return Unit_T(static_cast<int64_t>(denominator * value));
+    }
+
+    template<typename T, typename std::enable_if<std::is_floating_point<T>::value>::type* = nullptr>
+    static constexpr Unit_T FromFraction(int64_t denominator, T value)
+    {
+      return FromValue(value * denominator);
+    }
+
+    // ToValue
+    template<typename T = int64_t>
+    constexpr typename std::enable_if<std::is_integral<T>::value>::type ToValue() const
+    {
+      return static_cast<T>(value_);
+    }
+
+    template<typename T>
+    constexpr typename std::enable_if<std::is_floating_point<T>::value>::type ToValue() const
+    {
+      return IsPlusInfinity() ? std::numeric_limits<T>::infinity() :
+      IsMinusInfinity() ? -std::numeric_limits<T>::infinity() : value_;
+    }
 
   private:
     template <class RelativeUnit_T>
