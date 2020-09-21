@@ -83,6 +83,34 @@ namespace rtc_units_impl
       IsMinusInfinity() ? -std::numeric_limits<T>::infinity() : value_;
     }
 
+    //ToValueOr
+    template <typename T>
+    constexpr T ToValueOr(T fallback_value) const
+    {
+      return IsFinite() ? value_ : fallback_value;
+    }
+
+    //ToFraction
+    template <int64_t Denominator, typename T = int64_t>
+    constexpr typename std::enable_if<std::is_integral<T>::value, T>::type ToFraction() const
+    {
+      if(Unit_T::one_sided)
+      {
+        return static_cast<T>(DivRoundPositionToNearest(value_, Denominator));
+      }else
+      {
+        return static_cast<T>(DivRoundToNearset(value_, Denominator));
+      }
+    }
+    template <int64_t Denominator, typename T>
+    constexpr typename std::enable_if<std::is_floating_point<T>::value, T>::type ToFraction() const
+    {
+      return ToValue<T>() * (1 / static_cast<T>(Denominator));
+    }
+
+    //ToFractionOr
+    template <int64_t >
+
   private:
     template <class RelativeUnit_T>
     friend class RelativeUnit;
