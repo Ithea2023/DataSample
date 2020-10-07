@@ -35,9 +35,6 @@ namespace rtc_units_impl
     template<typename T, typename std::enable_if<std::is_integral<T>::value>::type* = nullptr>
     static constexpr Unit_T FromValue(T value)
     {
-      // if (Unit_T::one_sided)
-      //   RTC_DCHECK_GE(value, 0);
-      // RTC_DCHECK_GT(value, MinusInfinityVal());
       return Unit_T(static_cast<int64_t>(value));
     }
     // is float type, prevent float overflow the int64 type.
@@ -71,7 +68,7 @@ namespace rtc_units_impl
 
     // ToValue
     template<typename T = int64_t>
-    constexpr typename std::enable_if<std::is_integral<T>::value>::type ToValue() const
+    constexpr typename std::enable_if<std::is_integral<T>::value, T>::type ToValue() const
     {
       return static_cast<T>(value_);
     }
@@ -109,7 +106,24 @@ namespace rtc_units_impl
     }
 
     //ToFractionOr
-    template <int64_t >
+    template <int64_t Denominator>
+    constexpr int64_t ToFractionOr(int64_t fallback_value) const {
+        return IsFinite() ? Unit_T::one_sided ? DivRoundPositionToNearest(value_, Denominator) :
+            DivRoundToNearset(value_, Denominator) : fallback_value;
+    }
+
+    template <int64_t Factor, typename T = int64_t>
+    constexpr typename std::enable_if<std::is_integral<T>::value, T>::type
+    ToMultiple() const {
+        return static_cast<T>(ToValue() * Factor);
+    }
+    template <int64_t Factor, typename T>
+    constexpr typename std::enable_if<std::is_floating_point<T>::value, T>::type
+    ToMultiple() const {
+        return ToValue<T>() * Factor;
+    }
+
+    explicit constexpr UnitBase(int64_t value) : value_(value){}
 
   private:
     template <class RelativeUnit_T>
@@ -141,7 +155,77 @@ namespace rtc_units_impl
 
     int64_t value_;
   };
-}
 
+  template <class Unit_T>
+  class RelativeUnit : public UnitBase<Unit_T>
+  {
+  public:
+      constexpr Unit_T Clamped(Unit_T min_value, Unit_T max_value)const {
+          return std::max(min_value, 
+              std::min(UnitBase<Unit_T>::AsSubClassRef(), max_value));
+      }
+      constexpr void Clamp(Unit_T min_value, Unit_T max_value) {
+          *this = Clamped(min_value, max_value);
+      }
+      constexpr Unit_T operator+(const Unit_T other) const {
+          if(this->IsPlusInfinity() || other.IsPlusInfinity()) {
+              return this->PlusInfinity();
+          }else if(this->IsMinusInfinity() || other.IsMinusInfinity()) {
+              return this->MinusInfinity();
+          }
+          return UnitBase<Unit_T>::FromValue(this->ToValue() + other.ToValue());
+      }
+      constexpr Unit_T operator-(const Unit_T other) const {
+          if (this->IsPlusInfinity() || other.IsMinusInfinity()) {
+              return this->PlusInfinity();
+          }
+          else if (this->IsMinusInfinity() || other.IsPlusInfinity()) {
+              return this->MinusInfinity();
+          }
+          return UnitBase<Unit_T>::FromValue(this->ToValue() - other.ToValue());
+      }
+      constexpr Unit_T& operator+=(const Unit_T other) {
+          *this = *this + other;
+          return this->AsSubClassRef();
+      }
+      constexpr Unit_T& operator-=(const Unit_T other) {
+          *this = *this - other;
+          return this->AsSubClassRef();
+      }
+      constexpr double operator/(const Unit_T other) const {
+          return UnitBase<Unit_T>::template ToValue<double>() / other.template ToValue<double>();
+      }
+      template <typename T>
+      constexpr typename std::enable_if<std::is_arithmetic<T>::value, Unit_T>::type
+      operator/(const T& scalar) const {
+          return UnitBase<Unit_T>::FromValue(
+              std::round(UnitBase<Unit_T>::template ToValue<int64_t>() / scalar));
+      }
+      constexpr Unit_T operator*(double scalar)const {
+          return UnitBase<Unit_T>::FromValue(std::round(this->ToValue() * scalar));
+      }
+      constexpr Unit_T operator*(int64_t scalar)const {
+          return UnitBase<Unit_T>::FromValue(this->ToValue() * scalar);
+      }
+      constexpr Unit_T operator*(int32_t scalar)const {
+          return UnitBase<Unit_T>::FromValue(this->ToValue() * scalar);
+      }
+  protected:
+      using UnitBase<Unit_T>::UnitBase;
+  };
+
+  template<class Unit_T>
+  inline constexpr Unit_T operator*(double scalar, RelativeUnit<Unit_T> other) {
+        return other * scalar;
+  }
+  template<class Unit_T>
+  inline constexpr Unit_T operator*(int64_t scalar, RelativeUnit<Unit_T> other) {
+      return other * scalar;
+  }
+  template<class Unit_T>
+  inline constexpr Unit_T operator*(int32_t scalar, RelativeUnit<Unit_T> other) {
+      return other * scalar;
+  }
+}
 
 #endif
