@@ -1,51 +1,75 @@
 #include <iostream>
+#include <set>
 #include <string>
 #include <vector>
+#include "data_rate.h"
 
-template <class T>
+#define TODEFINE(x) x << ", "
+
+template<class T>
 class Vector {
 public:
-    Vector() = default;
-    ~Vector();
-    void push(T const&);
-    void pop();
-    std::vector<T>* get_ptr();
+  Vector() = default;
+
+  ~Vector();
+
+  void push(T const&);
+
+  void pop();
+
+  std::vector<T>* get_ptr();
+
 private:
-    std::vector<T> vector_;
+  std::vector<T> vector_;
 };
 
-template <class T>
+template<class T>
 Vector<T>::~Vector() = default;
 
-
-template <class T>
+template<class T>
 void Vector<T>::push(T const& element) {
-    vector_.push_back(element);
-}
-
-template <class T>
-void Vector<T>::pop(){
-    vector_.pop_back();
+  vector_.push_back(element);
 }
 
 template<class T>
-std::vector<T>* Vector<T>::get_ptr(){
-    return &vector_;
+void Vector<T>::pop() {
+  vector_.pop_back();
 }
+
+template<class T>
+std::vector<T>* Vector<T>::get_ptr() {
+  return &vector_;
+}
+
+class Counter {
+public:
+  std::vector<int> count_;
+
+  void
+  Reset() {
+    *this = {};
+  }
+};
+
+
+void counter_func(Counter* counter) {
+  // std::unique_ptr<Counter> counter(new Counter);
+  
+  for (int i = 0; i < 3000; i++) {
+    counter->count_.push_back(i);
+
+  }
+  std::cout << "Ming: counter.size: " << counter->count_.size() << std::endl;
+  counter->Reset();
+  std::cout << "Ming: counter.size: " << counter->count_.size() << std::endl;
+}
+
+
+
 
 int main() {
-    Vector<int> vector_my;
-    vector_my.push(1);
-    vector_my.push(2);
-    vector_my.push(3);
-    vector_my.push(4);
-    vector_my.pop();
-    auto* vec = vector_my.get_ptr();
-    std::cout << "vec.size: " << vec->size() << " vec.top: " << vec->back();
-    
+  datasample::DataRate data = datasample::DataRate::KilobitsPerSec(1000);
+  std::cout << "Ming: data: " << std::sqrt(data.kbps()) * std::sqrt(data.kbps()) << " " << TODEFINE(data.bps()) << TODEFINE(data.bps_or(0))
+    << TODEFINE(data.bytes_per_sec()) << TODEFINE(data.kbps_or(0)) << TODEFINE(data.IsPlusInfinity()) << std::endl;
 
 }
-
-
-
-
