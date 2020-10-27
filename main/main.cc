@@ -1,10 +1,13 @@
 #include <iostream>
 #include <set>
+#include <sstream>
 #include <string>
 #include <vector>
 #include "data_rate.h"
+// #include "strings"
 
 #define TODEFINE(x) x << ", "
+#define VALUE_NAME(x) #x
 
 template<class T>
 class Vector {
@@ -64,6 +67,19 @@ void counter_func(Counter* counter) {
   std::cout << "Ming: counter.size: " << counter->count_.size() << std::endl;
 }
 
+void size_check(std::vector<int>* ptr) {
+  std::cout << " prt_size: " << ptr->size() << " ptr[0] " << (*ptr)[0] << std::endl;
+}
+
+struct ssrcPair {
+  ssrcPair(uint32_t ssrc, int mbps) {
+    this->ssrc = ssrc;
+    this->mbps = mbps;
+  }
+  ssrcPair() = default;
+  uint32_t ssrc = 0;
+  int mbps = 0;
+};
 
 
 
@@ -71,5 +87,28 @@ int main() {
   datasample::DataRate data = datasample::DataRate::KilobitsPerSec(1000);
   std::cout << "Ming: data: " << std::sqrt(data.kbps()) * std::sqrt(data.kbps()) << " " << TODEFINE(data.bps()) << TODEFINE(data.bps_or(0))
     << TODEFINE(data.bytes_per_sec()) << TODEFINE(data.kbps_or(0)) << TODEFINE(data.IsPlusInfinity()) << std::endl;
+
+
+  std::vector<int> vec(3,3);
+  std::cout << " vec: " << vec[0] << vec[2] << " " << vec.size();
+  size_check(&vec);
+
+  std::vector<ssrcPair> video_stream(3);
+  std::cout << " video_stream size: " << video_stream.size() << std::endl;
+  video_stream[0] = { 123, 180 };
+  video_stream[1] = { 345, 360 };
+  video_stream[2] = { 567, 720 };
+  std::stringstream ss;
+  for (auto it : video_stream) {
+    ss << "ssrc: " << it.ssrc << ", mbps: " << it.mbps << ", ";
+  }
+  std::cout << ss.str() << std::endl;
+  std::set<int> set_data;
+  set_data.insert(1);
+  set_data.insert(12);
+  set_data.insert(13);
+
+  auto it = set_data.rbegin();
+  std::cout << " afgeg: " << *it;
 
 }
