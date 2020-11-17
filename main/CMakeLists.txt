@@ -8,5 +8,6 @@ target_link_libraries(${PROJECT_NAME}
         unit_base
         data_rate
         data_size 
+        code_tests
         # bbr       
 )   

@@ -1,9 +1,11 @@
 #include <iostream>
+#include <map>
 #include <set>
 #include <sstream>
 #include <string>
 #include <vector>
 #include "data_rate.h"
+#include "common_code.h"
 // #include "strings"
 
 #define TODEFINE(x) x << ", "
@@ -81,7 +83,15 @@ struct ssrcPair {
   int mbps = 0;
 };
 
-
+void map() {
+  std::map<int, int> map_var;
+  map_var[123] = 123;
+  std::stringstream ss;
+  for (auto it : map_var) {
+    ss << " [" << it.first << ", " << it.second << "],";
+  }
+  std::cout << ss.str() << map_var.at(123) << std::endl;
+}
 
 int main() {
   datasample::DataRate data = datasample::DataRate::KilobitsPerSec(1000);
@@ -109,6 +119,10 @@ int main() {
   set_data.insert(13);
 
   auto it = set_data.rbegin();
-  std::cout << " afgeg: " << *it;
+  std::cout << " afgeg: " << *it << " size: " << static_cast<size_t>(std::numeric_limits<int>::max())/1000/1000 << std::endl;
 
+
+  map();
+
+  filname_test();
 }

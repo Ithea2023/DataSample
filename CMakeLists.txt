@@ -10,7 +10,7 @@ add_subdirectory(main)
 add_subdirectory(checks)
 add_subdirectory(unit_base)
 add_subdirectory(units)
-add_subdirectory(tests)
+add_subdirectory(code_tests)
 
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 
