@@ -96,7 +96,7 @@ void map() {
   LOG << "Ming: map res: " << ss.str() << map_var.at(123);
 }
 
-int main() {
+void test_no_name() {
   datasample::DataRate data = datasample::DataRate::KilobitsPerSec(1000);
   LOG << "Ming: data: " << std::sqrt(data.kbps()) * std::sqrt(data.kbps()) << " " << TODEFINE(data.bps()) << TODEFINE(data.bps_or(0))
     << TODEFINE(data.bytes_per_sec()) << TODEFINE(data.kbps_or(0)) << TODEFINE(data.IsPlusInfinity());
@@ -107,9 +107,9 @@ int main() {
 
   std::vector<ssrcPair> video_stream(3);
   LOG << " video_stream size: " << video_stream.size();
-  video_stream[0] = {123, 180};
-  video_stream[1] = {345, 360};
-  video_stream[2] = {567, 720};
+  video_stream[0] = { 123, 180 };
+  video_stream[1] = { 345, 360 };
+  video_stream[2] = { 567, 720 };
   std::stringstream ss;
   for (auto it : video_stream) {
     ss << "ssrc: " << it.ssrc << ", mbps: " << it.mbps << ", ";
@@ -123,5 +123,9 @@ int main() {
   auto it = set_data.rbegin();
   LOG << "log1: " << *it << " size: " << std::dec << (std::numeric_limits<int>::max());
   LOG << "Ming";
+}
+
+int main() {
+ 
 
 }

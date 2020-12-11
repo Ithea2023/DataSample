@@ -6,6 +6,4 @@
 #include "../unit_base/logging.h"
 
 
-
-
 #endif
