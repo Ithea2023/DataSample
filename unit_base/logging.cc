@@ -27,6 +27,14 @@ LogStream::LogStream(const char * file_name, const int line):file_name_(file_nam
   }
 }
 
+LogStream::LogStream(const char * file_name, const int line, const char* mark) :file_name_(file_name), line_(line)
+{
+  if (Win_Thread) {
+    PlatformThreadId id = GetCurrentThreadId();
+    print_stream_ << "" << std::dec << id << ": " << mark << " ";
+  }
+}
+
 LogStream::~LogStream()
 {
   print_stream_ << " (" << FilenameFromPath(file_name_) << ":" << line_ << ") ";

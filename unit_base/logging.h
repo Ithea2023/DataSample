@@ -7,6 +7,7 @@ class LogStream {
 public:
   LogStream() = default;
   LogStream(const char* file_name, const int line);
+  LogStream(const char* file_name, const int line, const char* mark);
   ~LogStream();
   std::ostream& ostream() {
     return print_stream_;
@@ -23,5 +24,7 @@ private:
 #define LOG \
   LogStream(__FILE__, __LINE__).ostream()
 
+#define LOG_MING \
+  LogStream(__FILE__, __LINE__, "Ming:").ostream()
 
 #endif

@@ -1,7 +1,7 @@
 # Set the project name
 project(code_tests CXX)
 
-add_library(${PROJECT_NAME} common_code.cc common_code.h)
+add_library(${PROJECT_NAME} common_code.cc common_code.h common_types.cc common_types.h)
 set_property(TARGET ${PROJECT_NAME} PROPERTY FOLDER ${PROJECT_NAME})
 
 target_include_directories(${PROJECT_NAME}
