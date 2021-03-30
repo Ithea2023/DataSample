@@ -9,5 +9,6 @@ target_link_libraries(${PROJECT_NAME}
         data_rate
         data_size 
         code_tests
+        cm256
         # bbr       
 )   
