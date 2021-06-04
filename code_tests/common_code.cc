@@ -1,226 +1,658 @@
-#include "common_code.h"
+﻿#include "common_code.h"
 #include <sstream>
 #include <algorithm>
+#include <bitset>
 #include <functional>
 #include <future>
 #include <iostream>
 #include <iterator>
 #include <ppltasks.h>
 #include <thread>
+#include <ctime>
 #include <condition_variable>
+#include <map>
+#include <random>
+#include <set>
 
 #include "../unit_base/logging.h"
 
-constexpr int sample_fibonacci(const int n)
+Client::Client(SimulcastAbility ability)
 {
-    return n == 1 || n == 2 ? 1 : sample_fibonacci(n - 1) + sample_fibonacci(n - 2);
+    simulcastAbility_ = ability;
 }
 
-int func_main()
+SubscriptionList Client::setRssnrSubs(RssnrSubs subs)
 {
-    const int number = 30;
-    uint64_t class_res = 0;
-    Timer timer;
-    HighFibonacci hisFibonacci;
-    timer.reset();
-    class_res = hisFibonacci.default_run(number);
-    LOG_MING << "res:" << class_res << " class_finonacci: " << timer.elapsed_ms() << "ms";
-    timer.reset();
-    class_res = hisFibonacci.run(number);
-    LOG_MING << "res:" << class_res << " class_finonacci: " << timer.elapsed_ms() << "ms";
-    timer.reset();
-    class_res = hisFibonacci.run2(number);
-    LOG_MING << "res:" << class_res << " class_finonacci: " << timer.elapsed_ms() << "ms";
-
-    return 0;
-}
-
-using foo = void(int);
-
-void functional(foo f)
-{
-    f(1);
-}
-
-void reference(int& v)
-{
-    LOG_MING << "left";
-}
-
-void reference(int&& v)
-{
-    LOG_MING << "right";
-}
-
-template<typename T>
-void pass(T&& v)
-{
-    LOG_MING << " common";
-    reference(v);
-}
-
-int lambda_main()
-{
-    pass(1);
-
-    int one = 1;
-    pass(1);
-
-    auto share_pointer = std::make_shared<int>(10);
-    auto pointer2 = share_pointer;
-    auto pointer3 = share_pointer;
-
-    int* p = share_pointer.get();
-    LOG_MING << "p1:" << share_pointer.use_count() << ", p2:" << pointer2.use_count() << ", p3:" << pointer3.use_count();
-
-    pointer2.reset();
-    LOG_MING << "p1:" << share_pointer.use_count() << ", p2:" << pointer2.use_count() << ", p3:" << pointer3.use_count();
-
-    pointer2 = share_pointer;
-    pointer3.reset();
-    LOG_MING << "p1:" << share_pointer.use_count() << ", p2:" << pointer2.use_count() << ", p3:" << pointer3.use_count();
-
-    auto unique_1 = std::make_unique<int>(10);
-    auto unique_2 = new int(12);
-    LOG_MING << "unique: " << *unique_1 << ", " << *unique_2;
-    return 0;
-}
-
-void future_thread_main()
-{
-    std::packaged_task<int()> task([]
+    rssnrSubs_ = subs;
+    subscriptionList_.clear();
+    for (const auto& it : simulcastAbility_)
     {
-        return 7;
-    });
-    std::future<int> result = task.get_future();
-    std::thread(std::move(task)).detach();
-    LOG_MING << "waiting...";
-    result.wait();
-    LOG_MING << "done! future result is:" << result.get();
-
-    std::atomic<int64_t> a;
-    LOG_MING << "is lock_free:" << a.is_lock_free();
-}
-
-void producer_consumer_problem()
-{
-    std::queue<int> produced_nums;
-    std::mutex mutex;
-    std::condition_variable condition_variable;
-    bool notified = false;
-
-    auto producer = [&]
-    {
-        for (int i = 0;; ++i)
+        // update subscriptionList_
+        const auto& feedbackList = rssnrSubs_.find(it.first);
+        if (feedbackList != rssnrSubs_.end())
         {
-            std::this_thread::sleep_for(std::chrono::milliseconds(900));
-            std::unique_lock<std::mutex> lock(mutex);
-            LOG_MING << "producing " << i;
-            produced_nums.push(i);
-            notified = true;
-            condition_variable.notify_all();
+            std::set<uint32_t> bitrateList;
+            for (const auto& feedback : feedbackList->second)
+            {
+                bitrateList.insert(feedback.targetKbps);
+            }
+            const uint32_t limitKbps = *bitrateList.rbegin() * svcRatio_;
+            auto maxBitrateSuber = BitrateSuber{*bitrateList.rbegin(), 0};
+            auto minBitrateSuber = BitrateSuber{*bitrateList.begin(), 0};
+
+            for (const auto& bitrate : bitrateList)
+            {
+                if (bitrate >= limitKbps || *bitrateList.begin() == *bitrateList.rbegin())
+                {
+                    ++maxBitrateSuber.count;
+                }
+                else
+                {
+                    ++minBitrateSuber.count;
+                }
+            }
+            subscriptionList_[it.first] = subSimulcastConfig{
+                it.first, feedbackList->second.begin()->enable, maxBitrateSuber,
+                minBitrateSuber, it.second.expectRateBps / 1000, 0
+            };
         }
-    };
-
-    auto consumer = [&]
-    {
-        while (true)
+        else
         {
-            std::unique_lock<std::mutex> lock(mutex);
-            while (!notified)
-            {
-                condition_variable.wait(lock);
-            }
-            lock.unlock();
-            std::this_thread::sleep_for(std::chrono::milliseconds(500));
-            lock.lock();
-            while (!produced_nums.empty())
-            {
-                LOG_MING << "consuming " << produced_nums.front();
-                produced_nums.pop();
-            }
-            notified = false;
+            subscriptionList_[it.first] = subSimulcastConfig{
+                it.first, false, BitrateSuber{}, BitrateSuber{},
+                0, 0
+            };
         }
-    };
-
-    std::thread producer_thread(producer);
-    std::thread cs[2];
-    for (int i = 0; i < 2; ++i)
-    {
-        cs[i] = std::thread(consumer);
     }
-    producer_thread.join();
-    for (int i = 0; i < 2; ++i)
-    {
-        cs[i].join();
-    }
+    return subscriptionList_;
 }
 
-
-
-void muli_thread_test()
+SubscriptionList Client::hollyAllIn()
 {
-    std::queue<int> produced_nums;
-    std::mutex mtx;
-    std::condition_variable cv;
-    bool notified = false;
-
-    auto producer = [&]()
+    auto fillBitrate = [this](SubscriptionList& subscriptionList)
     {
-        for(int i = 0; ;++i)
+        for (auto& it : subscriptionList)
         {
-            std::this_thread::sleep_for(std::chrono::milliseconds(900));
-            std::unique_lock<std::mutex> lock(mtx);
-            LOG_MING << "producing: " << i << ", size:" << produced_nums.size();
-            produced_nums.push(i);
-            notified = true;
-            cv.notify_all();
+            int needKbps = 0;
+            if (!it.second.enable)
+            {
+                continue;
+            }
+
+            if (it.second.minBitrateSuer.bitrateKbps != it.second.maxBitrateSuber.bitrateKbps)
+            {
+                // has two bitrate in this layer
+                const int maxKbps = static_cast<uint32_t>(it.second.minBitrateSuer.bitrateKbps / svcRatio_);
+                needKbps = maxKbps - it.second.allocatedKbps;
+            }
+            else
+            {
+                needKbps = static_cast<int>(std::min(reservedBitrateKbps_, it.second.maxBitrateSuber.bitrateKbps)) - it.second.allocatedKbps;
+            }
+
+            it.second.allocatedKbps += needKbps;
+            reservedBitrateKbps_ -= it.second.allocatedKbps;
+            if (reservedBitrateKbps_ == 0)
+            {
+                break;
+            }
         }
+        return subscriptionList;
     };
 
-    auto consumer = [&]()
+    auto subscriptionList = subscriptionList_;
+    reservedBitrateKbps_ = bweBitrateKbps_;
+    uint32_t stashBitrateKbps = reservedBitrateKbps_;
+
+    bool successful = true;
+
+    // TODO: allocation by using minimum bitrate limit****************************************
+    for (auto& it : subscriptionList)
     {
-        while (true)
+        if (!it.second.enable)
         {
-            std::unique_lock<std::mutex> lock(mtx);
-            while (!notified)
-            {
-                cv.wait(lock);
-            }
-            lock.unlock();
-            std::this_thread::sleep_for(std::chrono::milliseconds(1000));
-            lock.lock();
-            while(!produced_nums.empty())
-            {
-                LOG_MING << "consumer: " << produced_nums.front();
-                produced_nums.pop();
-            }
-            notified = false;
-        }  
-    };
-
-    const int consumer_thread_num = 2;
-    std::thread thread_p(producer);
-    std::thread thread_co[consumer_thread_num];
-    for(int i = 0; i< consumer_thread_num; ++i)
-    {
-        thread_co[i] = std::thread(consumer);
+            continue;
+        }
+        const auto needKbps = simulcastAbility_[it.first].minBitrateBps / 1000 - it.second.allocatedKbps;
+        if (stashBitrateKbps >= needKbps)
+        {
+            it.second.allocatedKbps += needKbps;
+            stashBitrateKbps -= needKbps;
+        }
+        else
+        {
+            successful = false;
+            break;
+        }
     }
-    thread_p.join();
-    for(int i = 0; i< consumer_thread_num; ++i)
+
+    if (!successful)
     {
-        thread_co[i].join();
+        // bwe is smaller than we needed minimum bitrate, allocate remaining bitrate
+        return fillBitrate(subscriptionList);
+    }
+
+    // TODO: allocation by using [expect bitrate] limit*****************************************************
+    // TODO: repetitive option, fix it
+    // for (auto& it : subscriptionList)
+    // {
+    //     if (!it.second.enable)
+    //     {
+    //         continue;
+    //     }
+    //     const auto needKbps = std::min(it.second.minBitrateSuer.bitrateKbps,
+    //                                    simulcastAbility_[it.first].expectRateBps / 1000) - it.second.allocatedKbps;
+    //
+    //     if (stashBitrateKbps >= needKbps && stashBitrateKbps)
+    //     {
+    //         it.second.allocatedKbps += needKbps;
+    //         stashBitrateKbps -= needKbps;
+    //     }
+    //     else
+    //     {
+    //         successful = false;
+    //         break;
+    //     }
+    // }
+    //
+    // if (!successful)
+    // {
+    //     BitrateSuber bitrateSuber;
+    //     for (auto& it = subscriptionList.rbegin(); it != subscriptionList.rend(); ++it)
+    //     {
+    //         // save last higher layer
+    //         if (bitrateSuber.count)
+    //         {
+    //             if (!it->second.enable)
+    //             {
+    //                 it->second.enable = true;
+    //                 it->second.maxBitrateSuber = bitrateSuber;
+    //                 it->second.minBitrateSuer.bitrateKbps = bitrateSuber.bitrateKbps;
+    //             }
+    //             else if (bitrateSuber.bitrateKbps > it->second.minBitrateSuer.bitrateKbps)
+    //             {
+    //                 it->second.maxBitrateSuber.bitrateKbps =
+    //                     std::min(it->second.maxBitrateSuber.bitrateKbps, bitrateSuber.bitrateKbps);
+    //                 it->second.maxBitrateSuber.count += bitrateSuber.count;
+    //             }
+    //             else
+    //             {
+    //                 it->second.minBitrateSuer.bitrateKbps =
+    //                     std::min(it->second.minBitrateSuer.bitrateKbps, bitrateSuber.bitrateKbps);
+    //                 it->second.minBitrateSuer.count += bitrateSuber.count;
+    //             }
+    //
+    //             bitrateSuber = BitrateSuber{0, 0};
+    //         }
+    //
+    //         if (it->second.minBitrateSuer.bitrateKbps != it->second.maxBitrateSuber.bitrateKbps
+    //             && it->second.maxBitrateSuber.count > it->second.minBitrateSuer.count
+    //             && it->second.minBitrateSuer.count != 0
+    //             && it->first != simulcastAbility_.begin()->first
+    //             && stashBitrateKbps > it->second.minBitrateSuer.bitrateKbps)
+    //         {
+    //             // two diff bitrate, change minimum to lower layer
+    //             bitrateSuber = it->second.minBitrateSuer;
+    //             it->second.minBitrateSuer = it->second.maxBitrateSuber;
+    //             it->second.minBitrateSuer.count = 0;
+    //         }
+    //         else
+    //         {
+    //             // may has two diff bitrate, use minimum bitrate * svc_rate
+    //             const int diffKbps = it->second.allocatedKbps -
+    //                 static_cast<uint32_t>(it->second.minBitrateSuer.bitrateKbps / svcRatio_);
+    //             if (diffKbps > 0)
+    //             {
+    //                 stashBitrateKbps += diffKbps;
+    //                 it->second.allocatedKbps -= diffKbps;
+    //             }
+    //         }
+    //     }
+    //     return fillBitrate(subscriptionList);
+    // }
+
+    //allocation all bitrate limit
+    for (auto& it : subscriptionList)
+    {
+        if (!it.second.enable)
+        {
+            continue;
+        }
+        const auto needKbps = it.second.maxBitrateSuber.bitrateKbps - it.second.allocatedKbps;
+
+        if (stashBitrateKbps >= needKbps)
+        {
+            it.second.allocatedKbps += needKbps;
+            stashBitrateKbps -= needKbps;
+        }
+        else
+        {
+            break;
+        }
+    }
+
+    if (true)
+    {
+        BitrateSuber bitrateSuber;
+        for (auto& it = subscriptionList.rbegin(); it != subscriptionList.rend(); ++it)
+        {
+            if (bitrateSuber.count)
+            {
+                if (!it->second.enable)
+                {
+                    it->second.enable = true;
+                    it->second.maxBitrateSuber = bitrateSuber;
+                    it->second.minBitrateSuer.bitrateKbps = bitrateSuber.bitrateKbps;
+                }
+                else if (bitrateSuber.bitrateKbps > it->second.minBitrateSuer.bitrateKbps)
+                {
+                    it->second.maxBitrateSuber.bitrateKbps =
+                        std::min(it->second.maxBitrateSuber.bitrateKbps, bitrateSuber.bitrateKbps);
+                    it->second.maxBitrateSuber.count += bitrateSuber.count;
+                }
+                else
+                {
+                    it->second.minBitrateSuer.bitrateKbps =
+                        std::min(it->second.minBitrateSuer.bitrateKbps, bitrateSuber.bitrateKbps);
+                    it->second.minBitrateSuer.count += bitrateSuber.count;
+                }
+
+                bitrateSuber = BitrateSuber{0, 0};
+            }
+            if (it->second.minBitrateSuer.bitrateKbps != it->second.maxBitrateSuber.bitrateKbps
+                && it->second.maxBitrateSuber.count >= it->second.minBitrateSuer.count
+                && it->second.minBitrateSuer.count != 0
+                && it->first != simulcastAbility_.begin()->first
+                && stashBitrateKbps > it->second.minBitrateSuer.bitrateKbps)
+            {
+                // two diff bitrate, change minimum to lower layer
+                bitrateSuber = it->second.minBitrateSuer;
+                it->second.minBitrateSuer = it->second.maxBitrateSuber;
+                it->second.minBitrateSuer.count = 0;
+            }
+            else
+            {
+                // may has two diff bitrate, use minimum bitrate * svc_rate
+                const int diffKbps = it->second.allocatedKbps -
+                    static_cast<uint32_t>(it->second.minBitrateSuer.bitrateKbps / svcRatio_);
+                if (diffKbps > 0)
+                {
+                    stashBitrateKbps += diffKbps;
+                    it->second.allocatedKbps -= diffKbps;
+                }
+            }
+        }
+        return fillBitrate(subscriptionList);
     }
 }
 
-void internal_test()
+void Client::setSvcRatio(float ratio)
 {
-    
+    svcRatio_ = std::min(1.0f, std::max(0.5f, ratio));
 }
 
-InternalStruct::my_struct& InternalStruct::struct_test()
+SubscribeSubs Client::calculateSubscribeSubs()
 {
-    my_struct myStruct;
-    myStruct.i = 3000;
-    return  myStruct;
+    SubscribeSubs subs;
+    auto rssnrSubs = rssnrSubs_;
+    std::set<uint32_t> lastBitrateList;
+    for (auto& it = simulcastAbility_.rbegin(); it != simulcastAbility_.rend(); ++it)
+    {
+        const auto& feedbackList = rssnrSubs.find(it->first);
+        if (feedbackList == rssnrSubs.end())
+        {
+            continue;
+        }
+        std::set<uint32_t> bitrateList = lastBitrateList;
+        lastBitrateList.clear();
+        // find bitrate which is enable
+        for (const auto& feedback : feedbackList->second)
+        {
+            if (feedback.enable)
+                bitrateList.insert(feedback.targetKbps);
+        }
+
+        if (bitrateList.empty())
+        {
+            continue;
+        }
+
+        const uint32_t min_bitrate_sub = std::max(*bitrateList.begin(), it->second.minBitrateBps);
+        const uint32_t max_bitrate_sub = std::min(*bitrateList.rbegin(), it->second.maxBitrateBps);
+        if (feedbackList->first == simulcastAbility_.begin()->first)
+        {
+            //in minimum mbps, can not move subs to lower simulcast layer
+            subs[it->first] = SubscribeInfo{
+                true, static_cast<uint32_t>(*bitrateList.begin() / svcRatio_),
+                0
+            };
+        }
+        else if (min_bitrate_sub > max_bitrate_sub * svcRatio_)
+        {
+            //in svc ability, cover suitable subs
+            subs[it->first] = SubscribeInfo{
+                true, max_bitrate_sub, 0
+            };
+        }
+        else
+        {
+            //move the unrecoverable subs to lower simulcast layer
+
+            const uint32_t limitKbps = max_bitrate_sub * svcRatio_;
+            for (const auto& feedIter : feedbackList->second)
+            {
+                if (feedIter.targetKbps < limitKbps)
+                {
+                    lastBitrateList.insert(std::max(feedIter.targetKbps, it->second.minBitrateBps));
+                }
+            }
+        }
+    }
+    return subs;
+}
+
+uint32_t Client::calculateUprightBitrateDiff(SubscribeSubs subs)
+{
+    return uint32_t();
+}
+
+void Client::setBweBitrate(uint32_t bitrateKbps)
+{
+    bweBitrateKbps_ = std::min<uint32_t>(40000, std::max<uint32_t>(bitrateKbps, 0));
+}
+
+SubscribeSubs Client::TryAllocateBweBitrate(SubscribeSubs subscribeSubs)
+{
+    uint32_t reservedKbps = bweBitrateKbps_;
+
+    // first allocate, allocate max(minBitrate, neededBitrate) bitrate for every simulcast
+    for (auto& it : subscribeSubs)
+    {
+        if (simulcastAbility_.find(it.first) == simulcastAbility_.end())
+        {
+            continue;
+        }
+        uint32_t layerAllocateKbps = 0;
+        uint32_t needBitrate = simulcastAbility_[it.first].minBitrateBps - it.second.allocatedBitrateKbps;
+        uint32_t minNeededBitrate = simulcastAbility_[it.first].minBitrateBps / 1000 - it.second.allocatedBitrateKbps;
+        if (needBitrate > 0 && it.second.enable)
+        {
+            if (reservedKbps > needBitrate)
+            {
+                layerAllocateKbps = needBitrate;
+            }
+            else if (reservedKbps > minNeededBitrate)
+            {
+                layerAllocateKbps = minNeededBitrate;
+            }
+            it.second.allocatedBitrateKbps += layerAllocateKbps;
+            reservedKbps -= layerAllocateKbps;
+        }
+    }
+
+    for (auto& it : subscribeSubs)
+    {
+        if (simulcastAbility_.find(it.first) == simulcastAbility_.end()
+            || it.second.allocatedBitrateKbps == it.second.neededBitrateKbps)
+        {
+            continue;
+        }
+        uint32_t layerAllocateKbps = 0;
+        uint32_t neededBitrate = it.second.neededBitrateKbps - it.second.allocatedBitrateKbps;
+        if (neededBitrate > 0 && it.second.enable)
+        {
+            if (reservedKbps < neededBitrate)
+            {
+                layerAllocateKbps = reservedKbps;
+            }
+            else
+            {
+                layerAllocateKbps = neededBitrate;
+            }
+            it.second.allocatedBitrateKbps += layerAllocateKbps;
+            reservedKbps -= layerAllocateKbps;
+        }
+
+        if (reservedKbps == 0)
+        {
+            break;
+        }
+    }
+    PrintSubscribeSubs(subscribeSubs, bweBitrateKbps_, reservedKbps);
+    return subscribeSubs;
+}
+
+RssnrSubs Client::AdjustSubscription()
+{
+    return RssnrSubs();
+}
+
+uint32_t Client::getAllocateBitrateDiff() const
+{
+    return uint32_t();
+}
+
+void Client::PrintSubscribeSubs(SubscribeSubs subs, uint32_t bweKbps, uint32_t reservedKbps) const
+{
+    std::stringstream ss;
+    ss << "bwe:" << bweKbps << "kbps" << ", reserve:" << reservedKbps << "kbps ";
+    for (const auto& it : subs)
+    {
+        if (it.second.enable == false)
+        {
+            continue;
+        }
+        ss << it.first << "p[";
+        ss << "enable:" << it.second.enable;
+        ss << ", needed:" << it.second.neededBitrateKbps << "kbps";
+        ss << ", allocated:" << it.second.allocatedBitrateKbps << "kbps] ";
+    }
+    LOG_MING << ss.str();
+}
+
+SubscriptionList Client::calculateAll(SubscriptionList subList, uint32_t bweKbps)
+{
+    /*
+     *input: subList, bwe bitrate
+     *
+     *output: AllocationList
+     */
+
+    auto firstAllocationOut = subList;
+    bool isFull = tryAllocation(firstAllocationOut, bweKbps);
+    auto adjustSubsOut = firstAllocationOut;
+    bool isAdjust = tryAdjustSubscription(adjustSubsOut);
+
+    auto firstReservedKbps = allocateBitrate(firstAllocationOut, bweKbps);
+    auto adjustReservedKbps = allocateBitrate(adjustSubsOut, bweKbps);
+
+    //todo: can fix the logic
+    if (isFull && firstReservedKbps == adjustReservedKbps)
+    {
+        reservedBitrateKbps_ = adjustReservedKbps;
+        return adjustSubsOut;
+    }
+    else if (firstReservedKbps < adjustReservedKbps)
+    {
+        reservedBitrateKbps_ = firstReservedKbps;
+        return firstAllocationOut;
+    }
+    else
+    {
+        reservedBitrateKbps_ = adjustReservedKbps;
+        return adjustSubsOut;
+    }
+}
+
+uint32_t Client::allocateBitrate(SubscriptionList& subs, uint32_t sumOfBitrateKbps)
+{
+    for (auto& it : subs)
+    {
+        if (it.second.enable)
+        {
+            const auto& info = it.second;
+            int additonKbps = 0;
+            if (sumOfBitrateKbps < it.second.allocatedKbps)
+            {
+                LOG_MING << "warning, sum: " << sumOfBitrateKbps << "< all: " << it.second.allocatedKbps;
+                it.second.allocatedKbps = 0;
+            }
+            sumOfBitrateKbps -= it.second.allocatedKbps;
+            if (info.minBitrateSuer.bitrateKbps == info.maxBitrateSuber.bitrateKbps)
+            {
+                // one bitrate in this layer
+                additonKbps = info.minBitrateSuer.bitrateKbps;
+            }
+            else
+            {
+                // two diff bitrate in this layer
+                additonKbps = std::min<uint32_t>(info.minBitrateSuer.bitrateKbps / svcRatio_,
+                                                 info.maxBitrateSuber.bitrateKbps);
+            }
+            additonKbps -= it.second.allocatedKbps;
+
+            if (additonKbps > sumOfBitrateKbps)
+            {
+                if((sumOfBitrateKbps + info.allocatedKbps) > simulcastAbility_[info.mbps].minBitrateBps / 1000)
+                {
+                    additonKbps = sumOfBitrateKbps;
+                    it.second.allocatedKbps += additonKbps;
+                    sumOfBitrateKbps -= additonKbps;
+                }
+                break;
+            }
+            else
+            {
+                it.second.allocatedKbps += additonKbps;
+                sumOfBitrateKbps -= additonKbps;
+            }
+        }
+    }
+    return sumOfBitrateKbps;
+}
+
+bool Client::tryAllocation(SubscriptionList& subs, uint32_t bitrateKbps)
+{
+    bool hasSubscribe = false;
+    for (int i = 0; i < 3; ++i)
+    {
+        for (auto& it : subs)
+        {
+            if (it.second.enable)
+            {
+                hasSubscribe = true;
+                auto& info = it.second;
+                uint32_t additonKbps = 0;
+                uint32_t nowMaxLimitKbps = 0;
+
+                // check if is two bitrate in this layer
+                const uint32_t pointKbps = info.minBitrateSuer.count
+                                               ? static_cast<uint32_t>(info.minBitrateSuer.bitrateKbps / svcRatio_)
+                                               : info.maxBitrateSuber.bitrateKbps;
+
+                if (info.allocatedKbps < simulcastAbility_[it.first].minBitrateBps / 1000)
+                {
+                    // allocate by using min_bitrate
+                    nowMaxLimitKbps = simulcastAbility_[it.first].minBitrateBps / 1000;
+                }
+                else if (info.allocatedKbps < simulcastAbility_[it.first].expectRateBps / 1000)
+                {
+                    nowMaxLimitKbps = simulcastAbility_[it.first].expectRateBps / 1000;
+                    // allocate by using expect_bitrate
+                }
+                else
+                {
+                    nowMaxLimitKbps = pointKbps;
+                }
+
+                nowMaxLimitKbps = std::min(pointKbps, nowMaxLimitKbps);
+                if (info.allocatedKbps < pointKbps)
+                {
+                    additonKbps = nowMaxLimitKbps - info.allocatedKbps;
+                    if (bitrateKbps >= additonKbps)
+                    {
+                        bitrateKbps -= additonKbps;
+                        info.allocatedKbps += additonKbps;
+                    }
+                    else
+                    {
+                        return false;
+                    }
+                }
+            }
+        }
+        if (!hasSubscribe)
+            return false;
+    }
+    return true;
+}
+
+bool Client::tryAdjustSubscription(SubscriptionList& subs)
+{
+    bool changed = false;
+    BitrateSuber lastLayerSub;
+    for (auto& it = subs.rbegin(); it != subs.rend(); ++it)
+    {
+        auto& info = it->second;
+        if (lastLayerSub.count && lastLayerSub.bitrateKbps)
+        {
+            // <bitrate, count>
+            info.enable = true;
+            std::map<uint32_t, uint32_t> stashMap;
+            const std::vector<BitrateSuber> suberList{lastLayerSub, info.minBitrateSuer, info.maxBitrateSuber};
+            for (const auto& it : suberList)
+            {
+                if (it.count)
+                {
+                    if (stashMap.find(it.bitrateKbps) == stashMap.end())
+                    {
+                        stashMap[it.bitrateKbps] = it.count;
+                    }
+                    else
+                    {
+                        stashMap[it.bitrateKbps] += it.count;
+                    }
+                }
+            }
+
+            const uint32_t limitKbps = std::min(simulcastAbility_[info.mbps].maxBitrateBps / 1000, 
+                stashMap.rbegin()->first) * svcRatio_;
+            const uint32_t maxKbps = simulcastAbility_[info.mbps].maxBitrateBps / 1000;
+            auto maxBitrateSuber = BitrateSuber{
+                std::min(stashMap.rbegin()->first, maxKbps), 0
+            };
+            auto minBitrateSuber = BitrateSuber{
+                std::min(maxKbps, stashMap.begin()->first), 0
+            };
+
+            for (const auto& suber : stashMap)
+            {
+                if (suber.first >= limitKbps || stashMap.begin()->first == stashMap.rbegin()->first)
+                {
+                    maxBitrateSuber.count += suber.second;
+                }
+                else
+                {
+                    minBitrateSuber.count += suber.second;
+                }
+            }
+
+            info.maxBitrateSuber = maxBitrateSuber;
+            info.minBitrateSuer = minBitrateSuber;
+            // reset lastLayerSub
+            lastLayerSub = BitrateSuber();
+        }
+
+        if (info.minBitrateSuer.count
+            && info.minBitrateSuer.count <= info.maxBitrateSuber.count
+            && info.mbps != simulcastAbility_.begin()->first
+            && info.enable)
+        {
+            lastLayerSub = info.minBitrateSuer;
+            info.minBitrateSuer.bitrateKbps = info.maxBitrateSuber.bitrateKbps;
+            info.minBitrateSuer.count = 0;
+            changed = true;
+        }
+    }
+    return changed;
 }
