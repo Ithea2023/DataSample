@@ -101,7 +101,7 @@ struct BitrateSuber
     uint32_t count = 0;
 };
 
-struct subSimulcastConfig
+struct SubSimulcastConfig
 {
     base::Mbps mbps = 0;
     bool enable = false;
@@ -114,7 +114,7 @@ struct subSimulcastConfig
 typedef std::map<base::Mbps, SubscribeInfo> SubscribeSubs;
 typedef std::map<base::Mbps, std::vector<RssnrInfo>> RssnrSubs;
 
-typedef std::map<base::Mbps, subSimulcastConfig> SubscriptionList;
+typedef std::map<base::Mbps, SubSimulcastConfig> SubscriptionList;
 typedef std::map<uint32_t, SimulcastBitrateInfo> SimulcastAbility;
 
 static SimulcastAbility VIDEO_SIMULCAST_INFO({

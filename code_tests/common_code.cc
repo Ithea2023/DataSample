@@ -34,11 +34,13 @@ SubscriptionList Client::setRssnrSubs(RssnrSubs subs)
             std::set<uint32_t> bitrateList;
             for (const auto& feedback : feedbackList->second)
             {
-                bitrateList.insert(feedback.targetKbps);
+                const uint32_t bitrate = std::min(it.second.maxBitrateBps, 
+                    std::max(feedback.targetKbps, it.second.minBitrateBps));
+                bitrateList.insert(bitrate);
             }
             const uint32_t limitKbps = *bitrateList.rbegin() * svcRatio_;
             auto maxBitrateSuber = BitrateSuber{*bitrateList.rbegin(), 0};
-            auto minBitrateSuber = BitrateSuber{*bitrateList.begin(), 0};
+            auto minBitrateSuber = BitrateSuber{ *bitrateList.begin(), 0};
 
             for (const auto& bitrate : bitrateList)
             {
@@ -51,14 +53,14 @@ SubscriptionList Client::setRssnrSubs(RssnrSubs subs)
                     ++minBitrateSuber.count;
                 }
             }
-            subscriptionList_[it.first] = subSimulcastConfig{
+            subscriptionList_[it.first] = SubSimulcastConfig{
                 it.first, feedbackList->second.begin()->enable, maxBitrateSuber,
                 minBitrateSuber, it.second.expectRateBps / 1000, 0
             };
         }
         else
         {
-            subscriptionList_[it.first] = subSimulcastConfig{
+            subscriptionList_[it.first] = SubSimulcastConfig{
                 it.first, false, BitrateSuber{}, BitrateSuber{},
                 0, 0
             };

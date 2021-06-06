@@ -203,19 +203,19 @@ void tryAllocationTest()
     Client client(VIDEO_SIMULCAST_INFO);
     client.setSvcRatio(0.7);
     SubscriptionList subsInput;
-    subsInput[180] = subSimulcastConfig{
+    subsInput[180] = SubSimulcastConfig{
         180, 0, BitrateSuber(),
         BitrateSuber(), 0, 0
     };
-    subsInput[360] = subSimulcastConfig{
+    subsInput[360] = SubSimulcastConfig{
         360, 0, BitrateSuber(),
         BitrateSuber(), 0, 0
     };
-    subsInput[720] = subSimulcastConfig{
+    subsInput[720] = SubSimulcastConfig{
         720, 0, BitrateSuber(),
         BitrateSuber(), 0, 0
     };
-    subsInput[1080] = subSimulcastConfig{
+    subsInput[1080] = SubSimulcastConfig{
         1080, 0, BitrateSuber(),
         BitrateSuber(), 0, 0
     };
@@ -231,7 +231,7 @@ void tryAllocationTest()
 
     // sub 180p
     copySubsInput = subsInput;
-    copySubsInput[180] = subSimulcastConfig{
+    copySubsInput[180] = SubSimulcastConfig{
         180, 1, BitrateSuber{350, 1},
         BitrateSuber{350, 0}, 0, 0
     };
@@ -241,7 +241,7 @@ void tryAllocationTest()
 
     // sub 180p one layer
     copySubsInput = subsInput;
-    copySubsInput[180] = subSimulcastConfig{
+    copySubsInput[180] = SubSimulcastConfig{
         180, 1, BitrateSuber{350, 1},
         BitrateSuber{350, 0}, 0, 0
     };
@@ -251,7 +251,7 @@ void tryAllocationTest()
 
     // sub 180p tow layer
     copySubsInput = subsInput;
-    copySubsInput[180] = subSimulcastConfig{
+    copySubsInput[180] = SubSimulcastConfig{
         180, 1, BitrateSuber{350, 1},
         BitrateSuber{120, 1}, 0, 0
     };
@@ -261,7 +261,7 @@ void tryAllocationTest()
 
     // sub 180p tow layer
     copySubsInput = subsInput;
-    copySubsInput[180] = subSimulcastConfig{
+    copySubsInput[180] = SubSimulcastConfig{
         180, 1, BitrateSuber{350, 1},
         BitrateSuber{120, 1}, 0, 0
     };
@@ -271,7 +271,7 @@ void tryAllocationTest()
 
     // sub 180p tow layer
     copySubsInput = subsInput;
-    copySubsInput[180] = subSimulcastConfig{
+    copySubsInput[180] = SubSimulcastConfig{
         180, 1, BitrateSuber{350, 1},
         BitrateSuber{120, 1}, 0, 0
     };
@@ -281,7 +281,7 @@ void tryAllocationTest()
 
     // sub 180p tow layer
     copySubsInput = subsInput;
-    copySubsInput[180] = subSimulcastConfig{
+    copySubsInput[180] = SubSimulcastConfig{
         180, 1, BitrateSuber{350, 1},
         BitrateSuber{200, 1}, 0, 0
     };
@@ -291,12 +291,12 @@ void tryAllocationTest()
 
     // sub 180p, 360p one layer
     copySubsInput = subsInput;
-    copySubsInput[180] = subSimulcastConfig{
+    copySubsInput[180] = SubSimulcastConfig{
         180, 1, BitrateSuber{200, 1},
         BitrateSuber{200, 0}, 0, 0
     };
-    copySubsInput[360] = subSimulcastConfig{
-        180, 1, BitrateSuber{450, 1},
+    copySubsInput[360] = SubSimulcastConfig{
+        360, 1, BitrateSuber{450, 1},
         BitrateSuber{450, 0}, 0, 0
     };
     res = client.tryAllocation(copySubsInput, 600);
@@ -306,12 +306,12 @@ void tryAllocationTest()
 
     // sub 180p, 360p one layer
     copySubsInput = subsInput;
-    copySubsInput[180] = subSimulcastConfig{
+    copySubsInput[180] = SubSimulcastConfig{
         180, 1, BitrateSuber{200, 1},
         BitrateSuber{200, 0}, 0, 0
     };
-    copySubsInput[360] = subSimulcastConfig{
-        180, 1, BitrateSuber{450, 1},
+    copySubsInput[360] = SubSimulcastConfig{
+        360, 1, BitrateSuber{450, 1},
         BitrateSuber{450, 0}, 0, 0
     };
     res = client.tryAllocation(copySubsInput, 700);
@@ -321,18 +321,143 @@ void tryAllocationTest()
 
     // sub 180p, 360p two layer
     copySubsInput = subsInput;
-    copySubsInput[180] = subSimulcastConfig{
+    copySubsInput[180] = SubSimulcastConfig{
         180, 1, BitrateSuber{200, 1},
         BitrateSuber{120, 1}, 0, 0
     };
-    copySubsInput[360] = subSimulcastConfig{
-        180, 1, BitrateSuber{450, 1},
+    copySubsInput[360] = SubSimulcastConfig{
+        360, 1, BitrateSuber{450, 1},
         BitrateSuber{350, 0}, 0, 0
     };
     res = client.tryAllocation(copySubsInput, 700);
     EQUAL_DE(res, true);
     EQUAL_DE(copySubsInput[180].allocatedKbps, 171);
     EQUAL_DE(copySubsInput[360].allocatedKbps, 450);
+
+    // sub 180, 360, 720, 1080 700
+    copySubsInput = subsInput;
+    copySubsInput[180] = SubSimulcastConfig{
+        180, 1, BitrateSuber{200, 1},
+        BitrateSuber{120, 1}, 0, 0
+    };
+    copySubsInput[360] = SubSimulcastConfig{
+        360, 1, BitrateSuber{450, 1},
+        BitrateSuber{450, 0}, 0, 0
+    };
+    copySubsInput[720] = SubSimulcastConfig{
+        720, 1, BitrateSuber{800, 1},
+        BitrateSuber{800, 0}, 0, 0
+    };
+    copySubsInput[1080] = SubSimulcastConfig{
+        1080, 1, BitrateSuber{1500, 1},
+        BitrateSuber{1500, 0}, 0, 0
+    };
+    res = client.tryAllocation(copySubsInput, 700);
+    EQUAL_DE(res, false);
+    EQUAL_DE(copySubsInput[180].allocatedKbps, 120);
+    EQUAL_DE(copySubsInput[360].allocatedKbps, 350);
+    EQUAL_DE(copySubsInput[720].allocatedKbps, 0);
+    EQUAL_DE(copySubsInput[1080].allocatedKbps, 0);
+
+    // sub 180, 360, 720, 1080 1400
+    copySubsInput = subsInput;
+    copySubsInput[180] = SubSimulcastConfig{
+        180, 1, BitrateSuber{200, 1},
+        BitrateSuber{120, 1}, 0, 0
+    };
+    copySubsInput[360] = SubSimulcastConfig{
+        360, 1, BitrateSuber{450, 1},
+        BitrateSuber{450, 0}, 0, 0
+    };
+    copySubsInput[720] = SubSimulcastConfig{
+        720, 1, BitrateSuber{800, 1},
+        BitrateSuber{800, 0}, 0, 0
+    };
+    copySubsInput[1080] = SubSimulcastConfig{
+        1080, 1, BitrateSuber{1500, 1},
+        BitrateSuber{1500, 0}, 0, 0
+    };
+    res = client.tryAllocation(copySubsInput, 1400);
+    EQUAL_DE(res, false);
+    EQUAL_DE(copySubsInput[180].allocatedKbps, 120);
+    EQUAL_DE(copySubsInput[360].allocatedKbps, 350);
+    EQUAL_DE(copySubsInput[720].allocatedKbps, 700);
+    EQUAL_DE(copySubsInput[1080].allocatedKbps, 0);
+
+    // sub 180, 360, 720, 1080 2000
+    copySubsInput = subsInput;
+    copySubsInput[180] = SubSimulcastConfig{
+        180, 1, BitrateSuber{200, 1},
+        BitrateSuber{120, 1}, 0, 0
+    };
+    copySubsInput[360] = SubSimulcastConfig{
+        360, 1, BitrateSuber{450, 1},
+        BitrateSuber{450, 0}, 0, 0
+    };
+    copySubsInput[720] = SubSimulcastConfig{
+        720, 1, BitrateSuber{800, 1},
+        BitrateSuber{800, 0}, 0, 0
+    };
+    copySubsInput[1080] = SubSimulcastConfig{
+        1080, 1, BitrateSuber{1500, 1},
+        BitrateSuber{1500, 0}, 0, 0
+    };
+    res = client.tryAllocation(copySubsInput, 2000);
+    EQUAL_DE(res, false);
+    EQUAL_DE(copySubsInput[180].allocatedKbps, 120);
+    EQUAL_DE(copySubsInput[360].allocatedKbps, 350);
+    EQUAL_DE(copySubsInput[720].allocatedKbps, 700);
+    EQUAL_DE(copySubsInput[1080].allocatedKbps, 0);
+
+    // sub 180, 360, 720, 1080 2700
+    copySubsInput = subsInput;
+    copySubsInput[180] = SubSimulcastConfig{
+        180, 1, BitrateSuber{200, 1},
+        BitrateSuber{120, 1}, 0, 0
+    };
+    copySubsInput[360] = SubSimulcastConfig{
+        360, 1, BitrateSuber{450, 1},
+        BitrateSuber{450, 0}, 0, 0
+    };
+    copySubsInput[720] = SubSimulcastConfig{
+        720, 1, BitrateSuber{800, 1},
+        BitrateSuber{800, 0}, 0, 0
+    };
+    copySubsInput[1080] = SubSimulcastConfig{
+        1080, 1, BitrateSuber{1500, 1},
+        BitrateSuber{1500, 0}, 0, 0
+    };
+    res = client.tryAllocation(copySubsInput, 2700);
+    EQUAL_DE(res, false);
+    EQUAL_DE(copySubsInput[180].allocatedKbps, 120);
+    EQUAL_DE(copySubsInput[360].allocatedKbps, 350);
+    EQUAL_DE(copySubsInput[720].allocatedKbps, 700);
+    EQUAL_DE(copySubsInput[1080].allocatedKbps, 1500);
+
+    // sub 180, 360, 720, 1080 3000
+    copySubsInput = subsInput;
+    copySubsInput[180] = SubSimulcastConfig{
+        180, 1, BitrateSuber{200, 1},
+        BitrateSuber{120, 1}, 0, 0
+    };
+    copySubsInput[360] = SubSimulcastConfig{
+        360, 1, BitrateSuber{450, 1},
+        BitrateSuber{450, 0}, 0, 0
+    };
+    copySubsInput[720] = SubSimulcastConfig{
+        720, 1, BitrateSuber{800, 1},
+        BitrateSuber{800, 0}, 0, 0
+    };
+    copySubsInput[1080] = SubSimulcastConfig{
+        1080, 1, BitrateSuber{1500, 1},
+        BitrateSuber{1500, 0}, 0, 0
+    };
+    res = client.tryAllocation(copySubsInput, 3000);
+    EQUAL_DE(res, true);
+    EQUAL_DE(copySubsInput[180].allocatedKbps, 171);
+    EQUAL_DE(copySubsInput[360].allocatedKbps, 450);
+    EQUAL_DE(copySubsInput[720].allocatedKbps, 800);
+    EQUAL_DE(copySubsInput[1080].allocatedKbps, 1500);
 }
 
 void tryAdjustSubscriptionTest()
@@ -340,19 +465,19 @@ void tryAdjustSubscriptionTest()
     Client client(VIDEO_SIMULCAST_INFO);
     client.setSvcRatio(0.7);
     SubscriptionList subsInput;
-    subsInput[180] = subSimulcastConfig{
+    subsInput[180] = SubSimulcastConfig{
         180, 0, BitrateSuber(),
         BitrateSuber(), 0, 0
     };
-    subsInput[360] = subSimulcastConfig{
+    subsInput[360] = SubSimulcastConfig{
         360, 0, BitrateSuber(),
         BitrateSuber(), 0, 0
     };
-    subsInput[720] = subSimulcastConfig{
+    subsInput[720] = SubSimulcastConfig{
         720, 0, BitrateSuber(),
         BitrateSuber(), 0, 0
     };
-    subsInput[1080] = subSimulcastConfig{
+    subsInput[1080] = SubSimulcastConfig{
         1080, 0, BitrateSuber(),
         BitrateSuber(), 0, 0
     };
@@ -375,7 +500,7 @@ void tryAdjustSubscriptionTest()
 
     // sub 180p one bitrate
     copySubsInput = subsInput;
-    copySubsInput[180] = subSimulcastConfig{
+    copySubsInput[180] = SubSimulcastConfig{
         180, 1, BitrateSuber{350, 1},
         BitrateSuber{350, 0}, 0, 0
     };
@@ -386,7 +511,7 @@ void tryAdjustSubscriptionTest()
 
     // sub 180p two bitrate
     copySubsInput = subsInput;
-    copySubsInput[180] = subSimulcastConfig{
+    copySubsInput[180] = SubSimulcastConfig{
         180, 1, BitrateSuber{350, 1},
         BitrateSuber{200, 1}, 0, 0
     };
@@ -397,7 +522,7 @@ void tryAdjustSubscriptionTest()
 
     // sub 180p two bitrate
     copySubsInput = subsInput;
-    copySubsInput[180] = subSimulcastConfig{
+    copySubsInput[180] = SubSimulcastConfig{
         180, 1, BitrateSuber{350, 1},
         BitrateSuber{120, 1}, 0, 0
     };
@@ -409,7 +534,7 @@ void tryAdjustSubscriptionTest()
 
     // sub 360p two bitrate
     copySubsInput = subsInput;
-    copySubsInput[360] = subSimulcastConfig{
+    copySubsInput[360] = SubSimulcastConfig{
         360, 1, BitrateSuber{700, 1},
         BitrateSuber{350, 1}, 0, 0
     };
@@ -427,11 +552,11 @@ void tryAdjustSubscriptionTest()
 
     // sub 720 two bitrate, 360p one bitrate
     copySubsInput = subsInput;
-    copySubsInput[720] = subSimulcastConfig{
+    copySubsInput[720] = SubSimulcastConfig{
         720, 1, BitrateSuber{2000, 1},
         BitrateSuber{800, 1}, 0, 0
     };
-    copySubsInput[360] = subSimulcastConfig{
+    copySubsInput[360] = SubSimulcastConfig{
         360, 1, BitrateSuber{700, 1},
         BitrateSuber{700, 0}, 0, 0
     };
@@ -449,11 +574,11 @@ void tryAdjustSubscriptionTest()
 
     // sub 720 two bitrate, 360p one bitrate, more people
     copySubsInput = subsInput;
-    copySubsInput[720] = subSimulcastConfig{
+    copySubsInput[720] = SubSimulcastConfig{
         720, 1, BitrateSuber{2000, 1},
         BitrateSuber{800, 10}, 0, 0
     };
-    copySubsInput[360] = subSimulcastConfig{
+    copySubsInput[360] = SubSimulcastConfig{
         360, 1, BitrateSuber{700, 1},
         BitrateSuber{700, 0}, 0, 0
     };
@@ -471,11 +596,11 @@ void tryAdjustSubscriptionTest()
 
     // sub 720 two bitrate, 360p one bitrate
     copySubsInput = subsInput;
-    copySubsInput[720] = subSimulcastConfig{
+    copySubsInput[720] = SubSimulcastConfig{
         720, 1, BitrateSuber{2000, 1},
         BitrateSuber{800, 1}, 0, 0
     };
-    copySubsInput[360] = subSimulcastConfig{
+    copySubsInput[360] = SubSimulcastConfig{
         360, 1, BitrateSuber{700, 1},
         BitrateSuber{400, 1}, 0, 0
     };
@@ -498,19 +623,19 @@ void tryAdjustSubscriptionTest()
 
     // sub 1080p two bitrate, sub 720 one bitrate, 360p two bitrate, sub 180p min bitrate
     copySubsInput = subsInput;
-    copySubsInput[1080] = subSimulcastConfig{
+    copySubsInput[1080] = SubSimulcastConfig{
         1080, 1, BitrateSuber{4000, 1},
         BitrateSuber{2000, 1}, 0, 0
     };
-    copySubsInput[720] = subSimulcastConfig{
+    copySubsInput[720] = SubSimulcastConfig{
         720, 1, BitrateSuber{1800, 1},
         BitrateSuber{1800, 0}, 0, 0
     };
-    copySubsInput[360] = subSimulcastConfig{
+    copySubsInput[360] = SubSimulcastConfig{
         360, 1, BitrateSuber{700, 1},
         BitrateSuber{400, 1}, 0, 0
     };
-    copySubsInput[180] = subSimulcastConfig{
+    copySubsInput[180] = SubSimulcastConfig{
         180, 1, BitrateSuber{180, 1},
         BitrateSuber{180, 0}, 0, 0
     };
@@ -538,19 +663,19 @@ void tryAdjustSubscriptionTest()
 
     // sub 1080p two bitrate, sub 720 two bitrate, 360p one bitrate, sub 180p null
     copySubsInput = subsInput;
-    copySubsInput[1080] = subSimulcastConfig{
+    copySubsInput[1080] = SubSimulcastConfig{
         1080, 1, BitrateSuber{4000, 1},
         BitrateSuber{2000, 1}, 0, 0
     };
-    copySubsInput[720] = subSimulcastConfig{
+    copySubsInput[720] = SubSimulcastConfig{
         720, 1, BitrateSuber{1800, 1},
         BitrateSuber{800, 5}, 0, 0
     };
-    copySubsInput[360] = subSimulcastConfig{
+    copySubsInput[360] = SubSimulcastConfig{
         360, 1, BitrateSuber{700, 1},
         BitrateSuber{700, 0}, 0, 0
     };
-    copySubsInput[180] = subSimulcastConfig{
+    copySubsInput[180] = SubSimulcastConfig{
         180, 1, BitrateSuber{0, 0},
         BitrateSuber{0, 0}, 0, 0
     };
@@ -584,19 +709,19 @@ void AllTest()
     Client client(VIDEO_SIMULCAST_INFO);
     client.setSvcRatio(0.7);
     SubscriptionList subsInput;
-    subsInput[180] = subSimulcastConfig{
+    subsInput[180] = SubSimulcastConfig{
         180, 0, BitrateSuber(),
         BitrateSuber(), 0, 0
     };
-    subsInput[360] = subSimulcastConfig{
+    subsInput[360] = SubSimulcastConfig{
         360, 0, BitrateSuber(),
         BitrateSuber(), 0, 0
     };
-    subsInput[720] = subSimulcastConfig{
+    subsInput[720] = SubSimulcastConfig{
         720, 0, BitrateSuber(),
         BitrateSuber(), 0, 0
     };
-    subsInput[1080] = subSimulcastConfig{
+    subsInput[1080] = SubSimulcastConfig{
         1080, 0, BitrateSuber(),
         BitrateSuber(), 0, 0
     };
@@ -613,7 +738,7 @@ void AllTest()
 
     // sub 180p
     copySubsInput = subsInput;
-    copySubsInput[180] = subSimulcastConfig{
+    copySubsInput[180] = SubSimulcastConfig{
         180, 1, BitrateSuber{350, 1},
         BitrateSuber{350, 0}, 0, 0
     };
@@ -623,7 +748,7 @@ void AllTest()
 
     // sub 180p 0k
     copySubsInput = subsInput;
-    copySubsInput[180] = subSimulcastConfig{
+    copySubsInput[180] = SubSimulcastConfig{
         180, 1, BitrateSuber{350, 1},
         BitrateSuber{350, 0}, 0, 0
     };
@@ -633,7 +758,7 @@ void AllTest()
 
     // sub 180p two bitrate
     copySubsInput = subsInput;
-    copySubsInput[180] = subSimulcastConfig{
+    copySubsInput[180] = SubSimulcastConfig{
         180, 1, BitrateSuber{350, 1},
         BitrateSuber{130, 1}, 0, 0
     };
@@ -643,7 +768,7 @@ void AllTest()
 
     // sub 180p two bitrate low bitrate
     copySubsInput = subsInput;
-    copySubsInput[180] = subSimulcastConfig{
+    copySubsInput[180] = SubSimulcastConfig{
         180, 1, BitrateSuber{350, 1},
         BitrateSuber{130, 1}, 0, 0
     };
@@ -653,11 +778,11 @@ void AllTest()
 
     // sub 180, 360
     copySubsInput = subsInput;
-    copySubsInput[180] = subSimulcastConfig{
+    copySubsInput[180] = SubSimulcastConfig{
         180, 1, BitrateSuber{350, 1},
         BitrateSuber{130, 1}, 0, 0
     };
-    copySubsInput[360] = subSimulcastConfig{
+    copySubsInput[360] = SubSimulcastConfig{
         360, 1, BitrateSuber{700, 1},
         BitrateSuber{400, 1}, 0, 0
     };
@@ -668,11 +793,11 @@ void AllTest()
 
     // sub 180, 360 min bitrate
     copySubsInput = subsInput;
-    copySubsInput[180] = subSimulcastConfig{
+    copySubsInput[180] = SubSimulcastConfig{
         180, 1, BitrateSuber{350, 1},
         BitrateSuber{130, 1}, 0, 0
     };
-    copySubsInput[360] = subSimulcastConfig{
+    copySubsInput[360] = SubSimulcastConfig{
         360, 1, BitrateSuber{700, 1},
         BitrateSuber{400, 1}, 0, 0
     };
@@ -683,7 +808,7 @@ void AllTest()
 
     // sub 360 bitrate
     copySubsInput = subsInput;
-    copySubsInput[360] = subSimulcastConfig{
+    copySubsInput[360] = SubSimulcastConfig{
         360, 1, BitrateSuber{700, 1},
         BitrateSuber{400, 1}, 0, 0
     };
@@ -694,7 +819,7 @@ void AllTest()
 
     // sub 360 bitrate one layer
     copySubsInput = subsInput;
-    copySubsInput[360] = subSimulcastConfig{
+    copySubsInput[360] = SubSimulcastConfig{
         360, 1, BitrateSuber{700, 1},
         BitrateSuber{700, 0}, 0, 0
     };
@@ -705,11 +830,11 @@ void AllTest()
 
     // sub 360, 720 min bitrate 4000k
     copySubsInput = subsInput;
-    copySubsInput[360] = subSimulcastConfig{
+    copySubsInput[360] = SubSimulcastConfig{
         360, 1, BitrateSuber{500, 1},
         BitrateSuber{500, 0}, 0, 0
     };
-    copySubsInput[720] = subSimulcastConfig{
+    copySubsInput[720] = SubSimulcastConfig{
         720, 1, BitrateSuber{2500, 1},
         BitrateSuber{800, 1}, 0, 0
     };
@@ -721,11 +846,11 @@ void AllTest()
     // sub 360, 720 min bitrate 2500k
     // TODO: wanderful
     copySubsInput = subsInput;
-    copySubsInput[360] = subSimulcastConfig{
+    copySubsInput[360] = SubSimulcastConfig{
         360, 1, BitrateSuber{400, 1},
         BitrateSuber{400, 0}, 0, 0
     };
-    copySubsInput[720] = subSimulcastConfig{
+    copySubsInput[720] = SubSimulcastConfig{
         720, 1, BitrateSuber{2500, 1},
         BitrateSuber{800, 1}, 0, 0
     };
@@ -738,11 +863,11 @@ void AllTest()
     // sub 360, 720 min bitrate 1700k
     // TODO: wanderful
     copySubsInput = subsInput;
-    copySubsInput[360] = subSimulcastConfig{
+    copySubsInput[360] = SubSimulcastConfig{
         360, 1, BitrateSuber{400, 1},
         BitrateSuber{400, 0}, 0, 0
     };
-    copySubsInput[720] = subSimulcastConfig{
+    copySubsInput[720] = SubSimulcastConfig{
         720, 1, BitrateSuber{2500, 1},
         BitrateSuber{800, 1}, 0, 0
     };
@@ -755,11 +880,11 @@ void AllTest()
     // sub 360, 720 min bitrate 1000k
     // TODO: wanderful awesome
     copySubsInput = subsInput;
-    copySubsInput[360] = subSimulcastConfig{
+    copySubsInput[360] = SubSimulcastConfig{
         360, 1, BitrateSuber{400, 1},
         BitrateSuber{400, 0}, 0, 0
     };
-    copySubsInput[720] = subSimulcastConfig{
+    copySubsInput[720] = SubSimulcastConfig{
         720, 1, BitrateSuber{2500, 1},
         BitrateSuber{800, 1}, 0, 0
     };
@@ -768,10 +893,86 @@ void AllTest()
     EQUAL_DE(resAllocationOut[360].allocatedKbps, 650);
     EQUAL_DE(resAllocationOut[180].allocatedKbps, 350);
     EQUAL_DE(client.reservedBitrateKbps_, 0);
+
+    // sub 360, 720 1080 4000
+    // TODO: wanderful awesome
+    copySubsInput = subsInput;
+    copySubsInput[360] = SubSimulcastConfig{
+        360, 1, BitrateSuber{400, 1},
+        BitrateSuber{400, 0}, 0, 0
+    };
+    copySubsInput[720] = SubSimulcastConfig{
+        720, 1, BitrateSuber{2500, 1},
+        BitrateSuber{800, 1}, 0, 0
+    };
+    copySubsInput[1080] = SubSimulcastConfig{
+        1080, 1, BitrateSuber{2500, 1},
+        BitrateSuber{2500, 0}, 0, 0
+    };
+    resAllocationOut = client.calculateAll(copySubsInput, 4000);
+    EQUAL_DE(resAllocationOut[1080].allocatedKbps, 2458);
+    EQUAL_DE(resAllocationOut[720].allocatedKbps, 1142);
+    EQUAL_DE(resAllocationOut[360].allocatedKbps, 400);
+    EQUAL_DE(resAllocationOut[180].allocatedKbps, 0);
+    EQUAL_DE(client.reservedBitrateKbps_, 0);
+
+    // sub 180 360, 720 1080 4000
+    // TODO: wanderful awesome
+    copySubsInput = subsInput;
+    copySubsInput[180] = SubSimulcastConfig{
+        180, 1, BitrateSuber{180, 1},
+        BitrateSuber{180, 0}, 0, 0
+    };
+    copySubsInput[360] = SubSimulcastConfig{
+        360, 1, BitrateSuber{400, 1},
+        BitrateSuber{400, 0}, 0, 0
+    };
+    copySubsInput[720] = SubSimulcastConfig{
+        720, 1, BitrateSuber{2500, 1},
+        BitrateSuber{800, 1}, 0, 0
+    };
+    copySubsInput[1080] = SubSimulcastConfig{
+        1080, 1, BitrateSuber{2500, 1},
+        BitrateSuber{2500, 0}, 0, 0
+    };
+    resAllocationOut = client.calculateAll(copySubsInput, 4000);
+    EQUAL_DE(resAllocationOut[1080].allocatedKbps, 2278);
+    EQUAL_DE(resAllocationOut[720].allocatedKbps, 1142);
+    EQUAL_DE(resAllocationOut[360].allocatedKbps, 400);
+    EQUAL_DE(resAllocationOut[180].allocatedKbps, 180);
+    EQUAL_DE(client.reservedBitrateKbps_, 0);
+
+    // sub 180 360, 720 1080 2000
+    // TODO: wanderful awesome
+    copySubsInput = subsInput;
+    copySubsInput[180] = SubSimulcastConfig{
+        180, 1, BitrateSuber{180, 1},
+        BitrateSuber{180, 0}, 0, 0
+    };
+    copySubsInput[360] = SubSimulcastConfig{
+        360, 1, BitrateSuber{400, 1},
+        BitrateSuber{400, 0}, 0, 0
+    };
+    copySubsInput[720] = SubSimulcastConfig{
+        720, 1, BitrateSuber{2500, 1},
+        BitrateSuber{800, 1}, 0, 0
+    };
+    copySubsInput[1080] = SubSimulcastConfig{
+        1080, 1, BitrateSuber{2500, 1},
+        BitrateSuber{2500, 0}, 0, 0
+    };
+    resAllocationOut = client.calculateAll(copySubsInput, 2000);
+    EQUAL_DE(resAllocationOut[1080].allocatedKbps, 0);
+    EQUAL_DE(resAllocationOut[720].allocatedKbps, 1043);
+    EQUAL_DE(resAllocationOut[360].allocatedKbps, 700);
+    EQUAL_DE(resAllocationOut[180].allocatedKbps, 257);
+    EQUAL_DE(client.reservedBitrateKbps_, 0);
+
+
 }
 int main()
 {
-    // tryAllocationTest();
-    // tryAdjustSubscriptionTest();
+    tryAllocationTest();
+    tryAdjustSubscriptionTest();
     AllTest();
 }
