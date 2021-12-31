@@ -1,8 +1,9 @@
-#include<iostream>
-#include "../units/data_rate.h"
-
+#include <iostream>
+#include "unit_base.h"
+#include "main.h"
 int main()
 {
-    std::cout<<"hello world"<< std::endl;
+
+    LOG_MING << "hello, max(" << 12 << ", " << -5 << ")=" << ::max(12, -5);
     return 0;
 }

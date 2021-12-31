@@ -1,0 +1,24 @@
+#IncludeRegexLine: ^[ 	]*[#%][ 	]*(include|import)[ 	]*[<"]([^">]+)([">])
+
+#IncludeRegexScan: ^.*$
+
+#IncludeRegexComplain: ^$
+
+#IncludeRegexTransform: 
+
+../unit_base/unit_base.h
+sstream
+-
+
+/Users/enki/Work/cmake/DataSample/main/main.cc
+iostream
+-
+unit_base.h
+/Users/enki/Work/cmake/DataSample/main/unit_base.h
+main.h
+/Users/enki/Work/cmake/DataSample/main/main.h
+
+/Users/enki/Work/cmake/DataSample/main/main.h
+sstream
+-
+
